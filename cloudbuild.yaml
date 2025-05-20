@@ -1,20 +1,37 @@
-options:
-  logging: CLOUD_LOGGING_ONLY
- 
 steps:
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/ml-sales-prediction/ml-sales-prediction', '.']
- 
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/ml-sales-prediction/ml-sales-prediction']
- 
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
+    id: 'Build Docker image'
     args:
-      - run
-      - deploy
-      - ml-sales-prediction
-      - --image=us-central1-docker.pkg.dev/$PROJECT_ID/ml-sales-prediction/ml-sales-prediction
-      - --region=us-central1
-      - --platform=managed
-      - --allow-unauthenticated
+      [
+        'build',
+        '-t',
+        'us-central1-docker.pkg.dev/$PROJECT_ID/ml-sales-prediction-kartik/sales-predictor:$SHORT_SHA',
+        '.'
+      ]
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push to Artifact Registry'
+    args:
+      [
+        'push',
+        'us-central1-docker.pkg.dev/$PROJECT_ID/ml-sales-prediction-kartik/sales-predictor:$SHORT_SHA'
+      ]
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'Deploy to Cloud Run'
+    entrypoint: 'gcloud'
+    args:
+      [
+        'run', 'deploy', '${_SERVICE_NAME}',
+        '--image', 'us-central1-docker.pkg.dev/$PROJECT_ID/ml-sales-prediction-kartik/sales-predictor:$SHORT_SHA',
+        '--region', 'us-central1',
+        '--platform', 'managed',
+        '--allow-unauthenticated',
+        '--set-env-vars', 'VERSION=$SHORT_SHA'
+      ]
+
+options:
+  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
+
+substitutions:
+  _SERVICE_NAME: sales-predictor-service
