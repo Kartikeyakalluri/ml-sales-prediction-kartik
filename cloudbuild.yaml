@@ -30,6 +30,18 @@ steps:
         '--set-env-vars', 'VERSION=$SHORT_SHA'
       ]
 
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'Trigger Cloud Deploy Release'
+    entrypoint: 'gcloud'
+    args:
+      [
+        'deploy', 'releases', 'create', 'release-$SHORT_SHA',
+        '--delivery-pipeline', 'sales-predictor-pipeline',
+        '--region', 'us-central1',
+        '--images', 'sales-predictor=us-central1-docker.pkg.dev/$PROJECT_ID/ml-sales-prediction-kartik/sales-predictor:$SHORT_SHA',
+        '--source', 'deploy/'
+      ]
+
 options:
   defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
 
